@@ -14,6 +14,8 @@ export {
   type BundledChartEntry,
 } from './chartCatalog'
 
+export { getSpawnEvents } from './spawnEvents'
+
 import { BUNDLED_CHARTS, chartUrlForEntry } from './chartCatalog'
 
 /** 後方互換（未選択時の既定譜） */

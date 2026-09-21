@@ -20,7 +20,14 @@ function parseEvent(raw: unknown, index: number): ScoreChartEvent {
   if (!getNoteById(noteId)) {
     throw new Error(`events[${index}].noteId "${noteId}" is not in the sound catalog`)
   }
-  return { noteId, beat }
+  let role: ScoreChartEvent['role'] = 'melody'
+  if (raw.role !== undefined) {
+    if (raw.role !== 'melody' && raw.role !== 'bass') {
+      throw new Error(`events[${index}].role must be "melody" or "bass"`)
+    }
+    role = raw.role
+  }
+  return { noteId, beat, role }
 }
 
 export function parseScoreChart(json: unknown): ScoreChart {
@@ -36,11 +43,22 @@ export function parseScoreChart(json: unknown): ScoreChart {
     throw new Error('chart.events must be a non-empty array')
   }
   const events = eventsRaw.map((item, index) => parseEvent(item, index))
+
+  let rhythmEvents: ScoreChartEvent[] | undefined
+  const rhythmRaw = json.rhythmEvents
+  if (rhythmRaw !== undefined) {
+    if (!Array.isArray(rhythmRaw) || rhythmRaw.length === 0) {
+      throw new Error('chart.rhythmEvents must be a non-empty array when set')
+    }
+    rhythmEvents = rhythmRaw.map((item, index) => parseEvent(item, index))
+  }
+
   return {
     id: typeof json.id === 'string' ? json.id : undefined,
     title: typeof json.title === 'string' ? json.title : undefined,
     bpm,
     events,
+    rhythmEvents,
   }
 }
 

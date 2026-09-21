@@ -3,6 +3,9 @@ import { loadSoundBank } from '../audio/loadSoundBank'
 import { CHART_MUSIC_GAIN } from '../game/gameTuning'
 import type { ScoreChart } from '../score-chart/types'
 
+const MELODY_GAIN = CHART_MUSIC_GAIN * 0.78
+const BASS_GAIN = CHART_MUSIC_GAIN * 1.05
+
 /** 譜面イベントを BGM として AudioContext 上にスケジュール（外部ファイルなし）。 */
 export async function scheduleChartMusic(
   ctx: AudioContext,
@@ -24,7 +27,7 @@ export async function scheduleChartMusic(
     const source = ctx.createBufferSource()
     const gain = ctx.createGain()
     source.buffer = buffer
-    gain.gain.value = CHART_MUSIC_GAIN
+    gain.gain.value = event.role === 'bass' ? BASS_GAIN : MELODY_GAIN
     source.connect(gain)
     gain.connect(ctx.destination)
     source.start(when)

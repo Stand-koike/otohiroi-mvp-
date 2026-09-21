@@ -3,17 +3,405 @@
   "title": "ぴょんぴょんメロディ",
   "bpm": 108,
   "events": [
-    { "noteId": "c4", "beat": 0 },
-    { "noteId": "c4", "beat": 0.5 },
-    { "noteId": "e4", "beat": 1 },
-    { "noteId": "g4", "beat": 2 },
-    { "noteId": "c5", "beat": 3 },
-    { "noteId": "g4", "beat": 4 },
-    { "noteId": "e4", "beat": 5 },
-    { "noteId": "c4", "beat": 6 },
-    { "noteId": "e4", "beat": 7 },
-    { "noteId": "g4", "beat": 8 },
-    { "noteId": "c5", "beat": 9 },
-    { "noteId": "c5", "beat": 10 }
+    {
+      "noteId": "c4",
+      "beat": 0,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 1,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 2,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 3,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 0.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 1,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 1.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 2.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 3,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 3.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 4,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 5,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 6,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 7,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 4.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 5.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 6.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 7,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 7.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 8,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 9,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 10,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 11,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 8.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 9,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 9.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 10.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 11,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 11.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 12,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 13,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 14,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 15,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 12.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 13,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 13.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 14.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 15,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 15.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 16,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 17,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 18,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 19,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 16.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 17,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 17.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 18.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 19,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 19.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 20,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 21,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 22,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 23,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 20.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 21,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 21.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 22.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 23,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 23.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 24,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 25,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 26,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 27,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 24.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 25,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 25.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 26.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 27,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 27.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "c4",
+      "beat": 28,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 29,
+      "role": "bass"
+    },
+    {
+      "noteId": "g4",
+      "beat": 30,
+      "role": "bass"
+    },
+    {
+      "noteId": "c4",
+      "beat": 31,
+      "role": "bass"
+    },
+    {
+      "noteId": "e4",
+      "beat": 28.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 29,
+      "role": "melody"
+    },
+    {
+      "noteId": "c5",
+      "beat": 29.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 30.5,
+      "role": "melody"
+    },
+    {
+      "noteId": "e4",
+      "beat": 31,
+      "role": "melody"
+    },
+    {
+      "noteId": "g4",
+      "beat": 31.5,
+      "role": "melody"
+    }
   ]
 }
