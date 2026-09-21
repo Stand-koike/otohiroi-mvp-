@@ -10,7 +10,11 @@ import {
   updateScoreOnCollect,
   type ScoreState,
 } from './gameScore'
-import { indexFingerFromLandmarks, type NormalizedPoint } from './handCoords'
+import { FullBodyAvatar } from '../avatar/FullBodyAvatar'
+import {
+  touchPointsFromSnapshot,
+  type NormalizedPoint,
+} from './handCoords'
 
 const NOTE_RADIUS_PX = 52
 const FINGER_RADIUS_PX = 28
@@ -79,7 +83,8 @@ export function OtohiroiGame({ onBack }: Props) {
   const scoreRef = useRef<ScoreState>(createScoreState())
   const stageSizeRef = useRef({ width: 1, height: 1 })
   const { gestureConfig } = useGestureSettings()
-  const [finger, setFinger] = useState<{ x: number; y: number } | null>(null)
+  const [touchPoints, setTouchPoints] = useState<NormalizedPoint[]>([])
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
   const [notes, setNotes] = useState<GameNote[]>(() =>
     createInitialNotes(SIMULTANEOUS_NOTE_COUNT),
   )
@@ -129,22 +134,26 @@ export function OtohiroiGame({ onBack }: Props) {
 
   const handleStatusChange = useCallback(
     (snapshot: GestureRuntimeSnapshot) => {
-      const nextFinger = indexFingerFromLandmarks(snapshot.landmarks)
-      setFinger(nextFinger)
-      if (!nextFinger) return
+      const points = touchPointsFromSnapshot(snapshot)
+      setTouchPoints(points)
+      if (points.length === 0) return
 
       const { width, height } = stageSizeRef.current
-      const fx = nextFinger.x * width
-      const fy = nextFinger.y * height
-      const hits = notesRef.current.filter((note) => {
-        const dist = Math.hypot(note.x * width - fx, note.y * height - fy)
-        return dist <= HIT_RADIUS_PX
-      })
+      const hits = notesRef.current.filter((note) =>
+        points.some((point) => {
+          const dist = Math.hypot(
+            note.x * width - point.x * width,
+            note.y * height - point.y * height,
+          )
+          return dist <= HIT_RADIUS_PX
+        }),
+      )
       if (hits.length === 0) return
 
       const hitIds = new Set(hits.map((note) => note.id))
       const remaining = notesRef.current.filter((note) => !hitIds.has(note.id))
-      const spawned = hits.map(() => randomNote(nextFinger))
+      const avoid = points[0] ?? null
+      const spawned = hits.map(() => randomNote(avoid))
       const nextNotes = [...remaining, ...spawned]
       notesRef.current = nextNotes
       setNotes(nextNotes)
@@ -196,6 +205,7 @@ export function OtohiroiGame({ onBack }: Props) {
       </header>
 
       <div ref={stageRef} className="otohiroi-stage" aria-label="おとひろいプレイ画面">
+        <FullBodyAvatar video={videoEl} />
         {notes.map((note, index) => (
           <span
             key={note.id}
@@ -216,12 +226,13 @@ export function OtohiroiGame({ onBack }: Props) {
             ♪
           </span>
         ))}
-        {finger ? (
+        {touchPoints.map((point, index) => (
           <span
+            key={`touch-${index}`}
             className="otohiroi-finger"
             style={{
-              left: `${finger.x * 100}%`,
-              top: `${finger.y * 100}%`,
+              left: `${point.x * 100}%`,
+              top: `${point.y * 100}%`,
               width: FINGER_RADIUS_PX * 2,
               height: FINGER_RADIUS_PX * 2,
               marginLeft: -FINGER_RADIUS_PX,
@@ -229,7 +240,7 @@ export function OtohiroiGame({ onBack }: Props) {
             }}
             aria-hidden
           />
-        ) : null}
+        ))}
       </div>
 
       {cameraError ? <p className="otohiroi-error">{cameraError}</p> : null}
@@ -237,10 +248,12 @@ export function OtohiroiGame({ onBack }: Props) {
       <GestureController
         enabled
         gesturesActive={false}
+        concealVideo
         gestureConfig={gestureConfig}
         presentationMode="PRESENTATION"
         onStatusChange={handleStatusChange}
         onRuntimeError={setCameraError}
+        onVideoReady={setVideoEl}
       />
     </main>
   )

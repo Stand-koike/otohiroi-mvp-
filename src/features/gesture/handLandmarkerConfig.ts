@@ -1,6 +1,6 @@
 export const HAND_LANDMARKER_OPTIONS = {
   runningMode: 'VIDEO' as const,
-  numHands: 1,
+  numHands: 2,
   minHandDetectionConfidence: 0.6,
   minHandPresenceConfidence: 0.6,
   minTrackingConfidence: 0.6,

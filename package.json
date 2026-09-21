@@ -10,7 +10,7 @@
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "setup:models": "node scripts/download-hand-landmarker.mjs",
+    "setup:models": "node scripts/download-hand-landmarker.mjs && node scripts/download-pose-landmarker.mjs",
     "generate:sounds": "node scripts/generate-note-sounds.mjs"
   },
   "dependencies": {
