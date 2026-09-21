@@ -33,6 +33,9 @@ npm run setup:models
 npm run dev
 ```
 
+音源カタログ（`src/features/audio`）はゲームロジックから独立しています。  
+API とコンソール確認手順は `src/features/audio/README.md` を参照してください。
+
 ## ビルド
 
 ```bash
