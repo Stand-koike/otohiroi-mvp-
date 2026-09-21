@@ -4,11 +4,10 @@
 
 ```text
 Camera (getUserMedia)
-  → MediaPipe HandLandmarker (detectForVideo)
-  → GestureController (gesturesActive=false)
-  → onStatusChange (landmarks 21点)
-  → handCoords.indexFingerFromLandmarks
-  → OtohiroiGame（当たり判定・UI）
+  → MediaPipe HandLandmarker (最大2手) + Pose Landmarker（全身）
+  → GestureController (gesturesActive=false, handsLandmarks)
+  → handCoords.touchPointsFromSnapshot → OtohiroiGame（両手当たり判定）
+  → FullBodyAvatar（Pose + キャプチャデフォルメ）
 ```
 
 プレゼン用の `GestureRecognizer.observe()` はゲーム中は呼ばれません（`gesturesActive={false}`）。

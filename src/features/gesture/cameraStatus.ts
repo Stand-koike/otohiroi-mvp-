@@ -24,6 +24,8 @@ export type GestureRuntimeSnapshot = {
   pinchZoomActive: boolean
   pinchSpan: number | null
   landmarks: { x: number; y: number }[] | null
+  /** 検出した各手の 21 点（最大 numHands）。ゲームの両手入力用。 */
+  handsLandmarks: { x: number; y: number }[][] | null
   pointerX: number | null
   pointerY: number | null
   pointerVisible: boolean

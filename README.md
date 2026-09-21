@@ -24,7 +24,7 @@ git push -u origin main
 ```bash
 npm install
 npm run predev
-npm run setup:models
+npm run setup:models   # hand + pose モデル
 ```
 
 ## 開発

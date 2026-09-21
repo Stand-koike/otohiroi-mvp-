@@ -30,6 +30,10 @@ type Props = {
   presentationMode?: PresentationMode
   onRuntimeError?: (message: string | null) => void
   onStatusChange?: (snapshot: GestureRuntimeSnapshot) => void
+  /** ゲーム用: 生カメラを DOM に残しつつ非表示 */
+  concealVideo?: boolean
+  /** Pose / アバター用に video 要素を渡す */
+  onVideoReady?: (video: HTMLVideoElement) => void
 }
 
 const EMPTY_SNAPSHOT: GestureRuntimeSnapshot = {
@@ -50,6 +54,7 @@ const EMPTY_SNAPSHOT: GestureRuntimeSnapshot = {
   pinchZoomActive: false,
   pinchSpan: null,
   landmarks: null,
+  handsLandmarks: null,
   pointerX: null,
   pointerY: null,
   pointerVisible: false,
@@ -70,12 +75,15 @@ export function GestureController({
   presentationMode = 'PRESENTATION',
   onRuntimeError,
   onStatusChange,
+  concealVideo = false,
+  onVideoReady,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const onCommandRef = useRef(onCommand)
   const onPresentationIntentRef = useRef(onPresentationIntent)
   const onRuntimeErrorRef = useRef(onRuntimeError)
   const onStatusChangeRef = useRef(onStatusChange)
+  const onVideoReadyRef = useRef(onVideoReady)
   const modeRef = useRef(presentationMode)
   const configRef = useRef(gestureConfig)
   const enabledRef = useRef(enabled)
@@ -87,6 +95,7 @@ export function GestureController({
   onPresentationIntentRef.current = onPresentationIntent
   onRuntimeErrorRef.current = onRuntimeError
   onStatusChangeRef.current = onStatusChange
+  onVideoReadyRef.current = onVideoReady
   modeRef.current = presentationMode
   configRef.current = gestureConfig
   enabledRef.current = enabled
@@ -142,7 +151,8 @@ export function GestureController({
         Math.ceil(lastSnapshot.vSignHoldElapsedMs ?? -1) === Math.ceil(next.vSignHoldElapsedMs ?? -1) &&
         Math.ceil(lastSnapshot.interactionCooldownRemainingMs / 100) ===
           Math.ceil(next.interactionCooldownRemainingMs / 100) &&
-        lastSnapshot.landmarks === next.landmarks
+        lastSnapshot.landmarks === next.landmarks &&
+        lastSnapshot.handsLandmarks === next.handsLandmarks
       ) {
         return
       }
@@ -195,6 +205,7 @@ export function GestureController({
         video.srcObject = stream
         video.muted = true
         await video.play()
+        onVideoReadyRef.current?.(video)
       } catch (error) {
         fail(toCameraFailure(error).message)
         return
@@ -223,7 +234,11 @@ export function GestureController({
 
         try {
           const result = landmarker.detectForVideo(video, now)
-          const hand = result.landmarks?.[0] ?? null
+          const handsRaw = result.landmarks ?? []
+          const hand = handsRaw[0] ?? null
+          const handsLandmarks = handsRaw.length
+            ? handsRaw.map((item) => item.map((p) => ({ x: p.x, y: p.y })))
+            : null
           if (gesturesActiveRef.current) {
             const interactionState = interactionStateRef.current
             const navigationCommand = recognizer.observe(
@@ -294,6 +309,7 @@ export function GestureController({
             swipeDx: debug.swipeDx,
             swipeSamples: debug.swipeSamples,
             landmarks: hand ? hand.map((p) => ({ x: p.x, y: p.y })) : null,
+            handsLandmarks,
             pointerX: debug.pointerX,
             pointerY: debug.pointerY,
             pointerVisible: debug.pointerVisible,
@@ -321,6 +337,7 @@ export function GestureController({
             swipeDx: debug.swipeDx,
             swipeSamples: debug.swipeSamples,
             landmarks: null,
+            handsLandmarks: null,
             pointerX: debug.pointerX,
             pointerY: debug.pointerY,
             pointerVisible: debug.pointerVisible,
@@ -362,7 +379,13 @@ export function GestureController({
   const video = (
     <video
       ref={videoRef}
-      className={showHomeDebug ? 'camera-preview' : 'camera-video'}
+      className={
+        showHomeDebug
+          ? 'camera-preview'
+          : concealVideo
+            ? 'camera-video camera-video--concealed'
+            : 'camera-video'
+      }
       muted
       playsInline
       autoPlay
