@@ -1,31 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { playCollectedNote } from '../audio'
 import type { GestureRuntimeSnapshot } from '../gesture/cameraStatus'
 import { AvatarSetupOverlay } from '../avatar/AvatarSetupOverlay'
 import { captureStylizedPortrait, FullBodyAvatar } from '../avatar/FullBodyAvatar'
 import { GestureController } from '../gesture/GestureController'
+import { loadScoreChart, type ScoreChart, type SpawnedChartNote } from '../score-chart'
+import { scheduleChartMusic } from '../rhythm/chartMusic'
 import {
-  createChartNoteSpawner,
-  createRandomNoteSpawner,
-  loadScoreChart,
-  type ChartNoteSpawner,
-  type ScoreChart,
-  type SpawnedChartNote,
-} from '../score-chart'
+  beatFromAudioTime,
+  isNoteExpired,
+  judgeTiming,
+  judgmentLabel,
+  type HitJudgment,
+} from '../rhythm/judgment'
+import { createRhythmNoteSpawner, type RhythmNoteSpawner } from '../rhythm/rhythmSpawner'
+import { touchPointsFromSnapshot } from './handCoords'
 import {
-  touchPointsFromSnapshot,
-} from './handCoords'
-import {
+  applyAutoMiss,
+  applyHitJudgment,
   createScoreState,
   expireCombo,
-  updateScoreOnCollect,
   type ScoreState,
 } from './gameScore'
 import {
   COMBO_EXPIRE_POLL_MS,
   HIT_RADIUS_PX,
   NOTE_RADIUS_PX,
-  SIMULTANEOUS_NOTE_COUNT,
+  RHYTHM_TICK_MS,
 } from './gameTuning'
 
 type GameNote = SpawnedChartNote
@@ -43,8 +43,9 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
   const scoreRef = useRef<ScoreState>(createScoreState())
   const stageSizeRef = useRef({ width: 1, height: 1 })
   const chartRef = useRef<ScoreChart | null>(null)
-  const spawnerRef = useRef<ChartNoteSpawner>(createRandomNoteSpawner())
-  const playStartMsRef = useRef<number>(0)
+  const spawnerRef = useRef<RhythmNoteSpawner | null>(null)
+  const songStartTimeRef = useRef(0)
+  const stopMusicRef = useRef<(() => void) | null>(null)
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
   const [handsLandmarks, setHandsLandmarks] = useState<
     { x: number; y: number }[][] | null
@@ -56,6 +57,7 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
   const [score, setScore] = useState<ScoreState>(() => createScoreState())
   const [stageSize, setStageSize] = useState({ width: 1, height: 1 })
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [lastJudgment, setLastJudgment] = useState<HitJudgment | null>(null)
 
   notesRef.current = notes
   scoreRef.current = score
@@ -120,6 +122,9 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
   }, [])
 
   const handleStartPlay = useCallback(() => {
+    const chart = chartRef.current
+    if (!chart) return
+
     if (videoEl) {
       try {
         setPortraitUrl(captureStylizedPortrait(videoEl))
@@ -127,29 +132,65 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
         // キャプチャ失敗時もプレイ開始
       }
     }
-    spawnerRef.current = chartRef.current
-      ? createChartNoteSpawner(chartRef.current)
-      : createRandomNoteSpawner()
-    playStartMsRef.current = performance.now()
-    const initial = spawnerRef.current.initialNotes(SIMULTANEOUS_NOTE_COUNT)
-    notesRef.current = initial
-    setNotes(initial)
+
+    const ctx = ensureAudio()
+    const startAt = ctx.currentTime + 0.25
+    songStartTimeRef.current = startAt
+    stopMusicRef.current?.()
+    stopMusicRef.current = null
+
+    void scheduleChartMusic(ctx, chart, startAt).then((stop) => {
+      stopMusicRef.current = stop
+    })
+
+    spawnerRef.current = createRhythmNoteSpawner(chart)
+    scoreRef.current = createScoreState()
+    setScore(createScoreState())
+    notesRef.current = []
+    setNotes([])
+    setLastJudgment(null)
     setPlaying(true)
-    void ensureAudio()
   }, [videoEl, ensureAudio])
 
   useEffect(() => {
     if (!playing) return
-    const playStartMs = playStartMsRef.current
+
     const timer = window.setInterval(() => {
-      const due = spawnerRef.current.pollBeatSpawns(performance.now(), playStartMs)
-      if (due.length === 0) return
-      setNotes((prev) => {
-        const next = [...prev, ...due]
-        notesRef.current = next
-        return next
+      const ctx = audioRef.current
+      const spawner = spawnerRef.current
+      const chart = chartRef.current
+      if (!ctx || !spawner || !chart) return
+
+      const currentBeat = beatFromAudioTime(
+        ctx.currentTime,
+        songStartTimeRef.current,
+        chart.bpm,
+      )
+
+      const spawned = spawner.pollSpawnNotes(currentBeat)
+      const expired: GameNote[] = []
+      const alive = notesRef.current.filter((note) => {
+        if (note.beat == null) return true
+        if (!isNoteExpired(note.beat, currentBeat)) return true
+        expired.push(note)
+        return false
       })
-    }, 100)
+
+      if (expired.length > 0) {
+        const now = performance.now()
+        for (let i = 0; i < expired.length; i += 1) {
+          scoreRef.current = applyAutoMiss(scoreRef.current, now)
+        }
+        setScore({ ...scoreRef.current })
+      }
+
+      if (spawned.length === 0 && expired.length === 0) return
+
+      const next = [...alive, ...spawned]
+      notesRef.current = next
+      setNotes(next)
+    }, RHYTHM_TICK_MS)
+
     return () => window.clearInterval(timer)
   }, [playing])
 
@@ -158,11 +199,21 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
       setHandsLandmarks(snapshot.handsLandmarks)
       if (!playing) return
 
+      const ctx = audioRef.current
+      const chart = chartRef.current
+      if (!ctx || !chart) return
+
       const points = touchPointsFromSnapshot(snapshot)
       if (points.length === 0) return
 
+      const currentBeat = beatFromAudioTime(
+        ctx.currentTime,
+        songStartTimeRef.current,
+        chart.bpm,
+      )
+
       const { width, height } = stageSizeRef.current
-      const hits = notesRef.current.filter((note) =>
+      const touched = notesRef.current.filter((note) =>
         points.some((point) => {
           const dist = Math.hypot(
             note.x * width - point.x * width,
@@ -171,42 +222,59 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
           return dist <= HIT_RADIUS_PX
         }),
       )
-      if (hits.length === 0) return
+      if (touched.length === 0) return
 
-      const hitIds = new Set(hits.map((note) => note.id))
-      const remaining = notesRef.current.filter((note) => !hitIds.has(note.id))
-      const avoid = points[0] ?? null
-      const spawned = hits.map(() => spawnerRef.current.replacementNote(avoid))
-      const nextNotes = [...remaining, ...spawned]
+      const now = performance.now()
+      let best: { note: GameNote; judgment: HitJudgment } | null = null
+
+      for (const note of touched) {
+        if (note.beat == null) continue
+        const judgment = judgeTiming(note.beat, currentBeat)
+        if (judgment == null) continue
+        if (!best) {
+          best = { note, judgment }
+          continue
+        }
+        if (judgment === 'perfect') {
+          best = { note, judgment }
+        }
+      }
+
+      if (!best) return
+
+      const hitIds = new Set([best.note.id])
+      const nextNotes = notesRef.current.filter((note) => !hitIds.has(note.id))
       notesRef.current = nextNotes
       setNotes(nextNotes)
 
-      try {
-        const ctx = ensureAudio()
-        for (const hit of hits) {
-          void playCollectedNote(ctx, hit.noteId)
-        }
-      } catch {
-        // 無音環境でもゲームは継続する
-      }
-
-      const nextScore = updateScoreOnCollect(
-        scoreRef.current,
-        performance.now(),
-        hits.length,
-      )
-      scoreRef.current = nextScore
-      setScore(nextScore)
+      scoreRef.current = applyHitJudgment(scoreRef.current, best.judgment, now)
+      setScore({ ...scoreRef.current })
+      setLastJudgment(best.judgment)
     },
-    [ensureAudio, playing],
+    [playing],
   )
 
   useEffect(() => {
+    if (!lastJudgment) return
+    const timer = window.setTimeout(() => setLastJudgment(null), 700)
+    return () => window.clearTimeout(timer)
+  }, [lastJudgment])
+
+  useEffect(() => {
     return () => {
+      stopMusicRef.current?.()
+      stopMusicRef.current = null
       void audioRef.current?.close()
       audioRef.current = null
     }
   }, [])
+
+  const handleBack = () => {
+    stopMusicRef.current?.()
+    stopMusicRef.current = null
+    setPlaying(false)
+    onBack()
+  }
 
   return (
     <main className="otohiroi">
@@ -215,15 +283,15 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
         <p className="otohiroi-song-title">{songTitle}</p>
         <div className="otohiroi-scorebar" aria-live="polite">
           <div className="otohiroi-score">
-            <span className="otohiroi-score__label">ひろった</span>
-            <span className="otohiroi-score__value">{score.total}</span>
+            <span className="otohiroi-score__label">点数</span>
+            <span className="otohiroi-score__value">{score.points}</span>
           </div>
           <div className={`otohiroi-combo${score.combo >= 2 ? ' is-hot' : ''}`}>
             <span className="otohiroi-combo__label">コンボ</span>
             <span className="otohiroi-combo__value">{score.combo}</span>
           </div>
         </div>
-        <button type="button" className="otohiroi-back" onClick={onBack}>
+        <button type="button" className="otohiroi-back" onClick={handleBack}>
           もどる
         </button>
       </header>
@@ -239,27 +307,35 @@ export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
         {!playing ? (
           <AvatarSetupOverlay poseStable={poseStable} onStartPlay={handleStartPlay} />
         ) : null}
+        {lastJudgment ? (
+          <p
+            className={`otohiroi-judgment otohiroi-judgment--${lastJudgment}`}
+            aria-live="polite"
+          >
+            {judgmentLabel(lastJudgment)}
+          </p>
+        ) : null}
         {playing
           ? notes.map((note, index) => (
-          <span
-            key={note.id}
-            className="otohiroi-note"
-            style={{
-              left: `${note.x * 100}%`,
-              top: `${note.y * 100}%`,
-              width: NOTE_RADIUS_PX * 2,
-              height: NOTE_RADIUS_PX * 2,
-              marginLeft: -NOTE_RADIUS_PX,
-              marginTop: -NOTE_RADIUS_PX,
-              fontSize: NOTE_RADIUS_PX * 1.35,
-              lineHeight: `${NOTE_RADIUS_PX * 2}px`,
-              zIndex: 4 + index,
-            }}
-            aria-hidden
-          >
-            ♪
-          </span>
-        ))
+              <span
+                key={note.id}
+                className="otohiroi-note"
+                style={{
+                  left: `${note.x * 100}%`,
+                  top: `${note.y * 100}%`,
+                  width: NOTE_RADIUS_PX * 2,
+                  height: NOTE_RADIUS_PX * 2,
+                  marginLeft: -NOTE_RADIUS_PX,
+                  marginTop: -NOTE_RADIUS_PX,
+                  fontSize: NOTE_RADIUS_PX * 1.35,
+                  lineHeight: `${NOTE_RADIUS_PX * 2}px`,
+                  zIndex: 4 + index,
+                }}
+                aria-hidden
+              >
+                ♪
+              </span>
+            ))
           : null}
       </div>
 
