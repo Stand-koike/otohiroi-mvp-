@@ -191,6 +191,21 @@ button { font: inherit; cursor: pointer; }
   pointer-events: none;
 }
 
+.otohiroi-avatar__body {
+  filter: drop-shadow(0 0 0.02rem rgba(15, 23, 42, 0.45));
+}
+
+.otohiroi-avatar__fill {
+  fill: rgba(125, 211, 252, 0.42);
+  stroke: rgba(186, 230, 253, 0.85);
+  stroke-width: 0.006;
+  stroke-linejoin: round;
+}
+
+.otohiroi-avatar__face {
+  filter: drop-shadow(0 0 0.015rem rgba(15, 23, 42, 0.35));
+}
+
 .otohiroi-avatar__bone {
   stroke: #7dd3fc;
   stroke-width: 0.014;
