@@ -5,8 +5,8 @@ import {
   assertPoseLandmarkerModelExists,
   createPoseLandmarker,
 } from '../pose/createPoseLandmarker'
-import { captureFrame } from './captureFrame'
-import { stylizeFrame } from './stylizeFrame'
+import { captureStylizedPortrait } from './capturePortrait'
+import { HAND_BONE_EDGES, mirroredHandPoints } from './handDrawing'
 
 const BODY_EDGES: readonly [number, number][] = [
   [11, 12],
@@ -25,16 +25,26 @@ const BODY_EDGES: readonly [number, number][] = [
   [0, 12],
 ]
 
-const JOINT_INDICES = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
+const POSE_STABLE_FRAMES = 45
 
 type Props = {
   video: HTMLVideoElement | null
+  handsLandmarks: { x: number; y: number }[][] | null
+  portraitUrl: string | null
+  showHands: boolean
+  onPoseStableChange?: (stable: boolean) => void
 }
 
-export function FullBodyAvatar({ video }: Props) {
+export function FullBodyAvatar({
+  video,
+  handsLandmarks,
+  portraitUrl,
+  showHands,
+  onPoseStableChange,
+}: Props) {
   const [landmarks, setLandmarks] = useState<{ x: number; y: number }[] | null>(null)
-  const [portraitUrl, setPortraitUrl] = useState<string | null>(null)
-  const capturedRef = useRef(false)
+  const stableFramesRef = useRef(0)
+  const stableSentRef = useRef(false)
 
   useEffect(() => {
     if (!video) return
@@ -42,18 +52,6 @@ export function FullBodyAvatar({ video }: Props) {
     let stopped = false
     let raf = 0
     let landmarker: PoseLandmarker | null = null
-
-    const tryCapturePortrait = () => {
-      if (capturedRef.current) return
-      try {
-        const frame = captureFrame(video)
-        const styled = stylizeFrame(frame)
-        setPortraitUrl(styled.toDataURL('image/png'))
-        capturedRef.current = true
-      } catch {
-        // 次フレームで再試行
-      }
-    }
 
     const loop = (now: number) => {
       if (stopped) return
@@ -65,11 +63,28 @@ export function FullBodyAvatar({ video }: Props) {
       try {
         const result = landmarker.detectForVideo(video, now)
         const pose = result.landmarks?.[0] ?? null
-        if (!pose) return
+        if (!pose) {
+          stableFramesRef.current = 0
+          onPoseStableChange?.(false)
+          return
+        }
         setLandmarks(pose.map((point) => ({ x: point.x, y: point.y })))
-        tryCapturePortrait()
+
+        const points = pose.map((point) => mirrorNormalizedPoint(point))
+        const torsoOk = [11, 12, 23, 24].every((index) => Boolean(points[index]))
+        if (torsoOk) {
+          stableFramesRef.current += 1
+        } else {
+          stableFramesRef.current = 0
+        }
+        const stable = stableFramesRef.current >= POSE_STABLE_FRAMES
+        if (stable && !stableSentRef.current) {
+          stableSentRef.current = true
+        }
+        onPoseStableChange?.(stable)
       } catch {
-        // 推論失敗はスキップ
+        stableFramesRef.current = 0
+        onPoseStableChange?.(false)
       }
     }
 
@@ -79,7 +94,7 @@ export function FullBodyAvatar({ video }: Props) {
         landmarker = await createPoseLandmarker(modelUrl)
         raf = requestAnimationFrame(loop)
       } catch {
-        // Pose 未セットアップ時は待機表示のまま
+        onPoseStableChange?.(false)
       }
     })()
 
@@ -89,7 +104,7 @@ export function FullBodyAvatar({ video }: Props) {
       landmarker?.close()
       landmarker = null
     }
-  }, [video])
+  }, [video, onPoseStableChange])
 
   if (!landmarks?.length) {
     return (
@@ -111,6 +126,40 @@ export function FullBodyAvatar({ video }: Props) {
     leftShoulder && rightShoulder
       ? Math.hypot(leftShoulder.x - rightShoulder.x, leftShoulder.y - rightShoulder.y)
       : 0.18
+
+  const handLayers =
+    showHands && handsLandmarks?.length
+      ? handsLandmarks.map((hand, handIndex) => {
+          const mirrored = mirroredHandPoints(hand)
+          return (
+            <g key={`hand-${handIndex}`} className="otohiroi-avatar__hand">
+              {HAND_BONE_EDGES.map(([from, to]) => {
+                const start = mirrored[from]
+                const end = mirrored[to]
+                if (!start || !end) return null
+                return (
+                  <line
+                    key={`${handIndex}-${from}-${to}`}
+                    x1={start.x}
+                    y1={start.y}
+                    x2={end.x}
+                    y2={end.y}
+                    className="otohiroi-avatar__hand-bone"
+                  />
+                )
+              })}
+              {mirrored[8] ? (
+                <circle
+                  cx={mirrored[8].x}
+                  cy={mirrored[8].y}
+                  r={0.022}
+                  className="otohiroi-avatar__touch"
+                />
+              ) : null}
+            </g>
+          )
+        })
+      : null
 
   return (
     <svg
@@ -144,19 +193,9 @@ export function FullBodyAvatar({ video }: Props) {
           />
         )
       })}
-      {JOINT_INDICES.map((index) => {
-        const point = points[index]
-        if (!point) return null
-        return (
-          <circle
-            key={index}
-            cx={point.x}
-            cy={point.y}
-            r={0.016}
-            className="otohiroi-avatar__joint"
-          />
-        )
-      })}
+      {handLayers}
     </svg>
   )
 }
+
+export { captureStylizedPortrait }

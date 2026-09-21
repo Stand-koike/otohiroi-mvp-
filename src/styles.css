@@ -183,6 +183,59 @@ button { font: inherit; cursor: pointer; }
   stroke-width: 0.005;
 }
 
+.otohiroi-avatar__hand-bone {
+  stroke: #f9a8d4;
+  stroke-width: 0.011;
+  stroke-linecap: round;
+}
+
+.otohiroi-avatar__touch {
+  fill: rgba(96, 165, 250, 0.55);
+  stroke: #fff;
+  stroke-width: 0.004;
+}
+
+.otohiroi-setup {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.72);
+  text-align: center;
+}
+
+.otohiroi-setup__title {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.otohiroi-setup__text {
+  margin: 0;
+  max-width: 20rem;
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.otohiroi-setup__start {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 28px;
+  background: #fde047;
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.otohiroi-setup__start:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .otohiroi-avatar-hint {
   position: absolute;
   inset: 0;
