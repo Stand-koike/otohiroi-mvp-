@@ -15,15 +15,13 @@ import {
   updateScoreOnCollect,
   type ScoreState,
 } from './gameScore'
-
-const NOTE_RADIUS_PX = 52
-const FINGER_RADIUS_PX = 28
-/** 指先と音符の当たり半径（px）。重なっていても各音符を独立判定する。 */
-const HIT_RADIUS_PX = NOTE_RADIUS_PX + FINGER_RADIUS_PX
-const MARGIN = 0.1
-const SIMULTANEOUS_NOTE_COUNT = 3
-/** 指の直下への再スポーンを避ける正規化距離。 */
-const SPAWN_CLEARANCE = 0.14
+import {
+  COMBO_EXPIRE_POLL_MS,
+  HIT_RADIUS_PX,
+  NOTE_RADIUS_PX,
+  SIMULTANEOUS_NOTE_COUNT,
+  randomSpawnPosition,
+} from './gameTuning'
 
 const NOTE_POOL = listNotes()
 
@@ -43,27 +41,11 @@ function pickRandomNoteId(): string {
 
 function randomNote(avoid?: NormalizedPoint | null): GameNote {
   noteSeq += 1
-  const id = `note-${noteSeq}`
-  for (let attempt = 0; attempt < 16; attempt++) {
-    const x = MARGIN + Math.random() * (1 - MARGIN * 2)
-    const y = MARGIN + Math.random() * (1 - MARGIN * 2)
-    if (
-      avoid &&
-      Math.hypot(x - avoid.x, y - avoid.y) < SPAWN_CLEARANCE
-    ) {
-      continue
-    }
-    return {
-      id,
-      x,
-      y,
-      noteId: pickRandomNoteId(),
-    }
-  }
+  const { x, y } = randomSpawnPosition(avoid)
   return {
-    id,
-    x: MARGIN + Math.random() * (1 - MARGIN * 2),
-    y: MARGIN + Math.random() * (1 - MARGIN * 2),
+    id: `note-${noteSeq}`,
+    x,
+    y,
     noteId: pickRandomNoteId(),
   }
 }
@@ -132,7 +114,7 @@ export function OtohiroiGame({ onBack }: Props) {
       if (next === scoreRef.current) return
       scoreRef.current = next
       setScore(next)
-    }, 120)
+    }, COMBO_EXPIRE_POLL_MS)
     return () => window.clearInterval(timer)
   }, [])
 
