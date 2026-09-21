@@ -1,0 +1,17 @@
+{
+  "id": "demo-melody",
+  "title": "はじめてのメロディ",
+  "bpm": 96,
+  "events": [
+    { "noteId": "c4", "beat": 0 },
+    { "noteId": "e4", "beat": 1 },
+    { "noteId": "g4", "beat": 2 },
+    { "noteId": "c5", "beat": 3 },
+    { "noteId": "g4", "beat": 4 },
+    { "noteId": "e4", "beat": 5 },
+    { "noteId": "c4", "beat": 6 },
+    { "noteId": "e4", "beat": 7 },
+    { "noteId": "g4", "beat": 8 },
+    { "noteId": "c5", "beat": 10 }
+  ]
+}

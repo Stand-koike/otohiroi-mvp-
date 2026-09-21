@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { playCollectedNote } from '../audio'
-import { listNotes } from '../audio/noteCatalog'
 import type { GestureRuntimeSnapshot } from '../gesture/cameraStatus'
 import { AvatarSetupOverlay } from '../avatar/AvatarSetupOverlay'
 import { captureStylizedPortrait, FullBodyAvatar } from '../avatar/FullBodyAvatar'
 import { GestureController } from '../gesture/GestureController'
 import {
+  createChartNoteSpawner,
+  createRandomNoteSpawner,
+  DEFAULT_SCORE_CHART_URL,
+  loadScoreChart,
+  type ChartNoteSpawner,
+  type ScoreChart,
+  type SpawnedChartNote,
+} from '../score-chart'
+import {
   touchPointsFromSnapshot,
-  type NormalizedPoint,
 } from './handCoords'
 import {
   createScoreState,
@@ -24,53 +31,9 @@ const MARGIN = 0.1
 const SIMULTANEOUS_NOTE_COUNT = 3
 /** 指の直下への再スポーンを避ける正規化距離。 */
 const SPAWN_CLEARANCE = 0.14
+const SPAWN_OPTIONS = { margin: MARGIN, spawnClearance: SPAWN_CLEARANCE }
 
-const NOTE_POOL = listNotes()
-
-type GameNote = {
-  id: string
-  x: number
-  y: number
-  noteId: string
-}
-
-let noteSeq = 0
-
-function pickRandomNoteId(): string {
-  const pick = NOTE_POOL[Math.floor(Math.random() * NOTE_POOL.length)]
-  return pick?.id ?? 'c4'
-}
-
-function randomNote(avoid?: NormalizedPoint | null): GameNote {
-  noteSeq += 1
-  const id = `note-${noteSeq}`
-  for (let attempt = 0; attempt < 16; attempt++) {
-    const x = MARGIN + Math.random() * (1 - MARGIN * 2)
-    const y = MARGIN + Math.random() * (1 - MARGIN * 2)
-    if (
-      avoid &&
-      Math.hypot(x - avoid.x, y - avoid.y) < SPAWN_CLEARANCE
-    ) {
-      continue
-    }
-    return {
-      id,
-      x,
-      y,
-      noteId: pickRandomNoteId(),
-    }
-  }
-  return {
-    id,
-    x: MARGIN + Math.random() * (1 - MARGIN * 2),
-    y: MARGIN + Math.random() * (1 - MARGIN * 2),
-    noteId: pickRandomNoteId(),
-  }
-}
-
-function createInitialNotes(count: number): GameNote[] {
-  return Array.from({ length: count }, () => randomNote())
-}
+type GameNote = SpawnedChartNote
 
 type Props = {
   onBack: () => void
@@ -82,6 +45,9 @@ export function OtohiroiGame({ onBack }: Props) {
   const notesRef = useRef<GameNote[]>([])
   const scoreRef = useRef<ScoreState>(createScoreState())
   const stageSizeRef = useRef({ width: 1, height: 1 })
+  const chartRef = useRef<ScoreChart | null>(null)
+  const spawnerRef = useRef<ChartNoteSpawner>(createRandomNoteSpawner(SPAWN_OPTIONS))
+  const playStartMsRef = useRef<number>(0)
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
   const [handsLandmarks, setHandsLandmarks] = useState<
     { x: number; y: number }[][] | null
@@ -89,9 +55,7 @@ export function OtohiroiGame({ onBack }: Props) {
   const [poseStable, setPoseStable] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null)
-  const [notes, setNotes] = useState<GameNote[]>(() =>
-    createInitialNotes(SIMULTANEOUS_NOTE_COUNT),
-  )
+  const [notes, setNotes] = useState<GameNote[]>([])
   const [score, setScore] = useState<ScoreState>(() => createScoreState())
   const [stageSize, setStageSize] = useState({ width: 1, height: 1 })
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -127,6 +91,16 @@ export function OtohiroiGame({ onBack }: Props) {
   }, [])
 
   useEffect(() => {
+    void loadScoreChart(DEFAULT_SCORE_CHART_URL)
+      .then((chart) => {
+        chartRef.current = chart
+      })
+      .catch(() => {
+        chartRef.current = null
+      })
+  }, [])
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       const next = expireCombo(scoreRef.current, performance.now())
       if (next === scoreRef.current) return
@@ -148,9 +122,31 @@ export function OtohiroiGame({ onBack }: Props) {
         // キャプチャ失敗時もプレイ開始
       }
     }
+    spawnerRef.current = chartRef.current
+      ? createChartNoteSpawner(chartRef.current, SPAWN_OPTIONS)
+      : createRandomNoteSpawner(SPAWN_OPTIONS)
+    playStartMsRef.current = performance.now()
+    const initial = spawnerRef.current.initialNotes(SIMULTANEOUS_NOTE_COUNT)
+    notesRef.current = initial
+    setNotes(initial)
     setPlaying(true)
     void ensureAudio()
   }, [videoEl, ensureAudio])
+
+  useEffect(() => {
+    if (!playing) return
+    const playStartMs = playStartMsRef.current
+    const timer = window.setInterval(() => {
+      const due = spawnerRef.current.pollBeatSpawns(performance.now(), playStartMs)
+      if (due.length === 0) return
+      setNotes((prev) => {
+        const next = [...prev, ...due]
+        notesRef.current = next
+        return next
+      })
+    }, 100)
+    return () => window.clearInterval(timer)
+  }, [playing])
 
   const handleStatusChange = useCallback(
     (snapshot: GestureRuntimeSnapshot) => {
@@ -175,7 +171,7 @@ export function OtohiroiGame({ onBack }: Props) {
       const hitIds = new Set(hits.map((note) => note.id))
       const remaining = notesRef.current.filter((note) => !hitIds.has(note.id))
       const avoid = points[0] ?? null
-      const spawned = hits.map(() => randomNote(avoid))
+      const spawned = hits.map(() => spawnerRef.current.replacementNote(avoid))
       const nextNotes = [...remaining, ...spawned]
       notesRef.current = nextNotes
       setNotes(nextNotes)

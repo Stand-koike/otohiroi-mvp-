@@ -10,6 +10,7 @@
 | `HIT_RADIUS_PX` | 80 | 取得距離（上2つの和） |
 | `MARGIN` | 0.1 | 出現位置の余白（正規化） |
 | `SPAWN_CLEARANCE` | 0.14 | 再スポーン時、指の近くを避ける距離 |
+| `DEFAULT_SCORE_CHART_URL` | `/score-charts/demo-melody.json` | 譜面ドリブン spawn（`score-chart/`） |
 | `POSE_STABLE_FRAMES` | 45 | とりくみ完了までの Pose 連続フレーム（FullBodyAvatar） |
 
 コンボ時間などは `src/features/game/gameScore.ts` を参照してください。
