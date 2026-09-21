@@ -3,21 +3,7 @@
 子ども向け身体操作ゲーム「おとひろい」の専用リポジトリです。  
 手追跡は [presenter-gesture-mvp](https://github.com/Stand-koike/presenter-gesture-mvp) の `GestureController` / MediaPipe パイプラインを移植しています（プレゼン PDF 機能は含みません）。
 
-## Cursor でこのリポジトリを開く
-
-1. リポジトリ: **https://github.com/Stand-koike/otohiroi-mvp-**
-2. 初回 push（手元の PC または権限のある環境で）:
-
-```bash
-cd otohiroi-mvp
-git remote add origin https://github.com/Stand-koike/otohiroi-mvp-.git
-git push -u origin main
-```
-
-空の GitHub リポジトリだけある場合は、下記「初回アップロード」も使えます。
-
-3. **Cursor → Open Folder** または **Cloud Agent → このリポジトリを選択**
-4. `.cursor/environment.json` により `npm install` とモデル取得が走ります
+リポジトリ URL: **https://github.com/Stand-koike/otohiroi-mvp-**（末尾ハイフンに注意）
 
 ## セットアップ
 
@@ -33,20 +19,25 @@ npm run setup:models   # hand + pose モデル
 npm run dev
 ```
 
-音源カタログ（`src/features/audio`）はゲームロジックから独立しています。  
-API とコンソール確認手順は `src/features/audio/README.md` を参照してください。
-
 ## ビルド
 
 ```bash
 npm run build
 ```
 
+## ドキュメント
+
+| ファイル | 内容 |
+|---------|------|
+| `docs/ARCHITECTURE.md` | カメラ → 推論 → ゲームの流れ |
+| `docs/REPO_STATE.md` | ブランチ方針・PR の整理 |
+| `src/features/audio/README.md` | 音源 API |
+
 ## プレゼンツールとの関係
 
 | リポジトリ | 用途 |
 |-----------|------|
 | `presenter-gesture-mvp` | PDF プレゼン + ジェスチャー操作 |
-| `otohiroi-mvp`（本リポジトリ） | おとひろいゲームのみ |
+| `otohiroi-mvp-`（本リポジトリ） | おとひろいゲームのみ |
 
-ゲームの新機能は **本リポジトリ** で開発してください。手追跡コアの改善は必要なら元リポジトリと手動で同期します。
+ゲームの新機能は **本リポジトリ** で開発してください。
