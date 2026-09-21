@@ -1,115 +1,47 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { HandLandmarker } from '@mediapipe/tasks-vision'
 import { startCameraStream, toCameraFailure } from '../camera/startCamera'
-import type { PresentationCommand, PresentationMode } from '../presentation/commands'
-import {
-  type GestureRuntimeSnapshot,
-} from './cameraStatus'
+import { type GestureRuntimeSnapshot } from './cameraStatus'
 import { assertHandLandmarkerModelExists, createHandLandmarker } from './createHandLandmarker'
-import { GestureDebugPanel } from './GestureDebugPanel'
-import type { GestureConfig } from './gestureConfig'
-import { GestureRecognizer } from './gestureRecognizer'
-import type { InteractionState } from '../interaction/interactionState'
-import { routeInteractionCommands } from '../interaction/interactionRouter'
-import {
-  createNextSlideIntent,
-  createPreviousSlideIntent,
-  createTogglePointerIntent,
-  type PresentationIntent,
-} from '../intent/presentationIntent'
 
 type Props = {
   enabled?: boolean
-  gesturesActive?: boolean
-  gestureConfig: GestureConfig
-  interactionState?: InteractionState
-  onPresentationIntent?: (intent: PresentationIntent) => void
-  onCommand?: (command: PresentationCommand) => void
-  showHomeDebug?: boolean
-  showDebugOverlay?: boolean
-  presentationMode?: PresentationMode
   onRuntimeError?: (message: string | null) => void
   onStatusChange?: (snapshot: GestureRuntimeSnapshot) => void
-  /** ゲーム用: 生カメラを DOM に残しつつ非表示 */
   concealVideo?: boolean
-  /** Pose / アバター用に video 要素を渡す */
   onVideoReady?: (video: HTMLVideoElement) => void
 }
 
 const EMPTY_SNAPSHOT: GestureRuntimeSnapshot = {
   cameraStatus: 'off',
-  gestureEnabled: false,
   errorMessage: null,
   handDetected: false,
-  inferenceFps: 0,
-  cooldownRemainingMs: 0,
-  handX: null,
-  handY: null,
-  phase: 'idle',
-  heldGesture: null,
-  lastCommand: null,
-  swipeDx: 0,
-  swipeSamples: 0,
-  panActive: false,
-  pinchZoomActive: false,
-  pinchSpan: null,
   landmarks: null,
   handsLandmarks: null,
-  pointerX: null,
-  pointerY: null,
-  pointerVisible: false,
-  vSignDetected: false,
-  vSignHoldElapsedMs: null,
-  interactionCooldownRemainingMs: 0,
 }
 
 export function GestureController({
   enabled = true,
-  gesturesActive = true,
-  gestureConfig,
-  interactionState: interactionStateProp,
-  onPresentationIntent,
-  onCommand,
-  showHomeDebug = false,
-  showDebugOverlay = false,
-  presentationMode = 'PRESENTATION',
   onRuntimeError,
   onStatusChange,
   concealVideo = false,
   onVideoReady,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const onCommandRef = useRef(onCommand)
-  const onPresentationIntentRef = useRef(onPresentationIntent)
   const onRuntimeErrorRef = useRef(onRuntimeError)
   const onStatusChangeRef = useRef(onStatusChange)
   const onVideoReadyRef = useRef(onVideoReady)
-  const modeRef = useRef(presentationMode)
-  const configRef = useRef(gestureConfig)
   const enabledRef = useRef(enabled)
-  const gesturesActiveRef = useRef(gesturesActive)
-  const interactionStateRef = useRef<InteractionState>(interactionStateProp ?? 'NORMAL')
-  const [homeDebug, setHomeDebug] = useState(EMPTY_SNAPSHOT)
 
-  onCommandRef.current = onCommand
-  onPresentationIntentRef.current = onPresentationIntent
   onRuntimeErrorRef.current = onRuntimeError
   onStatusChangeRef.current = onStatusChange
   onVideoReadyRef.current = onVideoReady
-  modeRef.current = presentationMode
-  configRef.current = gestureConfig
   enabledRef.current = enabled
-  gesturesActiveRef.current = gesturesActive
-  interactionStateRef.current = interactionStateProp ?? 'NORMAL'
 
   useEffect(() => {
     if (!enabled) {
       onRuntimeErrorRef.current?.(null)
-      onStatusChangeRef.current?.({
-        ...EMPTY_SNAPSHOT,
-        cameraStatus: 'off',
-        gestureEnabled: false,
-      })
+      onStatusChangeRef.current?.(EMPTY_SNAPSHOT)
       return
     }
 
@@ -118,39 +50,13 @@ export function GestureController({
     let stream: MediaStream | null = null
     let landmarker: HandLandmarker | null = null
     let modelUrl: string | null = null
-    const recognizer = new GestureRecognizer(configRef.current)
     let lastSnapshot = EMPTY_SNAPSHOT
-    let frameCount = 0
-    let fpsWindowStart = performance.now()
-    let inferenceFps = 0
 
     const publish = (next: GestureRuntimeSnapshot) => {
       if (
         lastSnapshot.cameraStatus === next.cameraStatus &&
-        lastSnapshot.gestureEnabled === next.gestureEnabled &&
         lastSnapshot.errorMessage === next.errorMessage &&
         lastSnapshot.handDetected === next.handDetected &&
-        Math.abs(lastSnapshot.inferenceFps - next.inferenceFps) < 0.5 &&
-        Math.ceil(lastSnapshot.cooldownRemainingMs / 100) === Math.ceil(next.cooldownRemainingMs / 100) &&
-        lastSnapshot.phase === next.phase &&
-        lastSnapshot.heldGesture === next.heldGesture &&
-        lastSnapshot.lastCommand === next.lastCommand &&
-        lastSnapshot.panActive === next.panActive &&
-        lastSnapshot.pinchZoomActive === next.pinchZoomActive &&
-        (lastSnapshot.pinchSpan == null && next.pinchSpan == null
-          ? true
-          : Math.abs((lastSnapshot.pinchSpan ?? 0) - (next.pinchSpan ?? 0)) < 0.01) &&
-        Math.abs(lastSnapshot.swipeDx - next.swipeDx) < 0.01 &&
-        lastSnapshot.swipeSamples === next.swipeSamples &&
-        lastSnapshot.handX?.toFixed(3) === next.handX?.toFixed(3) &&
-        lastSnapshot.handY?.toFixed(3) === next.handY?.toFixed(3) &&
-        lastSnapshot.pointerX?.toFixed(3) === next.pointerX?.toFixed(3) &&
-        lastSnapshot.pointerY?.toFixed(3) === next.pointerY?.toFixed(3) &&
-        lastSnapshot.pointerVisible === next.pointerVisible &&
-        lastSnapshot.vSignDetected === next.vSignDetected &&
-        Math.ceil(lastSnapshot.vSignHoldElapsedMs ?? -1) === Math.ceil(next.vSignHoldElapsedMs ?? -1) &&
-        Math.ceil(lastSnapshot.interactionCooldownRemainingMs / 100) ===
-          Math.ceil(next.interactionCooldownRemainingMs / 100) &&
         lastSnapshot.landmarks === next.landmarks &&
         lastSnapshot.handsLandmarks === next.handsLandmarks
       ) {
@@ -158,7 +64,6 @@ export function GestureController({
       }
       lastSnapshot = next
       onStatusChangeRef.current?.(next)
-      if (showHomeDebug) setHomeDebug(next)
     }
 
     const fail = (message: string) => {
@@ -166,7 +71,6 @@ export function GestureController({
       publish({
         ...EMPTY_SNAPSHOT,
         cameraStatus: 'error',
-        gestureEnabled: true,
         errorMessage: message,
       })
     }
@@ -190,11 +94,7 @@ export function GestureController({
       const video = videoRef.current
       if (!video) return
 
-      publish({
-        ...EMPTY_SNAPSHOT,
-        cameraStatus: 'starting',
-        gestureEnabled: true,
-      })
+      publish({ ...EMPTY_SNAPSHOT, cameraStatus: 'starting' })
 
       try {
         stream = await startCameraStream()
@@ -230,8 +130,6 @@ export function GestureController({
           return
         }
 
-        recognizer.setConfig(configRef.current)
-
         try {
           const result = landmarker.detectForVideo(video, now)
           const handsRaw = result.landmarks ?? []
@@ -239,120 +137,26 @@ export function GestureController({
           const handsLandmarks = handsRaw.length
             ? handsRaw.map((item) => item.map((p) => ({ x: p.x, y: p.y })))
             : null
-          if (gesturesActiveRef.current) {
-            const interactionState = interactionStateRef.current
-            const navigationCommand = recognizer.observe(
-              hand,
-              now,
-              modeRef.current,
-              interactionState,
-            )
-            const pointerCommand = recognizer.observePointer(
-              hand,
-              modeRef.current,
-              interactionState,
-            )
-            if (
-              modeRef.current === 'PRESENTATION' &&
-              recognizer.observeInteractionGesture(hand, now, modeRef.current) === 'toggle_pointer'
-            ) {
-              onPresentationIntentRef.current?.(createTogglePointerIntent())
-            }
-            for (const command of routeInteractionCommands(
-              interactionState,
-              navigationCommand,
-              pointerCommand,
-            )) {
-              if (command === 'NEXT_SLIDE') {
-                if (onPresentationIntentRef.current) {
-                  onPresentationIntentRef.current(createNextSlideIntent())
-                } else {
-                  onCommandRef.current?.(command)
-                }
-                continue
-              }
-              if (command === 'PREVIOUS_SLIDE') {
-                if (onPresentationIntentRef.current) {
-                  onPresentationIntentRef.current(createPreviousSlideIntent())
-                } else {
-                  onCommandRef.current?.(command)
-                }
-                continue
-              }
-              onCommandRef.current?.(command)
-            }
-          }
 
-          frameCount += 1
-          if (now - fpsWindowStart >= 1000) {
-            inferenceFps = frameCount * 1000 / (now - fpsWindowStart)
-            frameCount = 0
-            fpsWindowStart = now
-          }
-
-          const debug = recognizer.getDebug(Boolean(hand), now)
           publish({
             cameraStatus: hand ? 'hand_detected' : 'no_hand',
-            gestureEnabled: true,
             errorMessage: null,
-            handDetected: debug.handDetected,
-            inferenceFps,
-            cooldownRemainingMs: debug.cooldownRemainingMs,
-            handX: debug.handX,
-            handY: debug.handY,
-            phase: debug.phase,
-            heldGesture: debug.heldGesture,
-            lastCommand: debug.lastCommand,
-            panActive: debug.panActive,
-            pinchZoomActive: debug.pinchZoomActive,
-            pinchSpan: debug.pinchSpan,
-            swipeDx: debug.swipeDx,
-            swipeSamples: debug.swipeSamples,
+            handDetected: Boolean(hand),
             landmarks: hand ? hand.map((p) => ({ x: p.x, y: p.y })) : null,
             handsLandmarks,
-            pointerX: debug.pointerX,
-            pointerY: debug.pointerY,
-            pointerVisible: debug.pointerVisible,
-            vSignDetected: debug.vSignDetected,
-            vSignHoldElapsedMs: debug.vSignHoldElapsedMs,
-            interactionCooldownRemainingMs: debug.interactionCooldownRemainingMs,
           })
         } catch {
-          const debug = recognizer.getDebug(false, now)
           publish({
             cameraStatus: 'no_hand',
-            gestureEnabled: true,
             errorMessage: lastSnapshot.errorMessage,
             handDetected: false,
-            inferenceFps,
-            cooldownRemainingMs: debug.cooldownRemainingMs,
-            handX: null,
-            handY: null,
-            phase: debug.phase,
-            heldGesture: debug.heldGesture,
-            lastCommand: debug.lastCommand,
-            panActive: false,
-            pinchZoomActive: false,
-            pinchSpan: null,
-            swipeDx: debug.swipeDx,
-            swipeSamples: debug.swipeSamples,
             landmarks: null,
             handsLandmarks: null,
-            pointerX: debug.pointerX,
-            pointerY: debug.pointerY,
-            pointerVisible: debug.pointerVisible,
-            vSignDetected: debug.vSignDetected,
-            vSignHoldElapsedMs: debug.vSignHoldElapsedMs,
-            interactionCooldownRemainingMs: debug.interactionCooldownRemainingMs,
           })
         }
       }
 
-      publish({
-        ...EMPTY_SNAPSHOT,
-        cameraStatus: 'no_hand',
-        gestureEnabled: true,
-      })
+      publish({ ...EMPTY_SNAPSHOT, cameraStatus: 'no_hand' })
       raf = requestAnimationFrame(loop)
     }
 
@@ -365,46 +169,25 @@ export function GestureController({
       landmarker?.close()
       landmarker = null
     }
-  }, [enabled, showHomeDebug])
+  }, [enabled])
 
   useEffect(() => {
     if (enabled) return
     if (videoRef.current) videoRef.current.srcObject = null
   }, [enabled])
 
-  if (!enabled && !showHomeDebug) {
+  if (!enabled) {
     return null
   }
 
-  const video = (
+  return (
     <video
       ref={videoRef}
-      className={
-        showHomeDebug
-          ? 'camera-preview'
-          : concealVideo
-            ? 'camera-video camera-video--concealed'
-            : 'camera-video'
-      }
+      className={concealVideo ? 'camera-video camera-video--concealed' : 'camera-video'}
       muted
       playsInline
       autoPlay
-      aria-hidden={!showHomeDebug}
+      aria-hidden
     />
   )
-
-  if (showHomeDebug) {
-    return (
-      <>
-        {video}
-        <GestureDebugPanel snapshot={homeDebug} presentationMode={presentationMode} />
-      </>
-    )
-  }
-
-  if (showDebugOverlay) {
-    return video
-  }
-
-  return video
 }

@@ -2,19 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { playCollectedNote } from '../audio'
 import { listNotes } from '../audio/noteCatalog'
 import type { GestureRuntimeSnapshot } from '../gesture/cameraStatus'
+import { AvatarSetupOverlay } from '../avatar/AvatarSetupOverlay'
+import { captureStylizedPortrait, FullBodyAvatar } from '../avatar/FullBodyAvatar'
 import { GestureController } from '../gesture/GestureController'
-import { useGestureSettings } from '../gesture/useGestureSettings'
+import {
+  touchPointsFromSnapshot,
+  type NormalizedPoint,
+} from './handCoords'
 import {
   createScoreState,
   expireCombo,
   updateScoreOnCollect,
   type ScoreState,
 } from './gameScore'
-import { FullBodyAvatar } from '../avatar/FullBodyAvatar'
-import {
-  touchPointsFromSnapshot,
-  type NormalizedPoint,
-} from './handCoords'
 
 const NOTE_RADIUS_PX = 52
 const FINGER_RADIUS_PX = 28
@@ -82,9 +82,13 @@ export function OtohiroiGame({ onBack }: Props) {
   const notesRef = useRef<GameNote[]>([])
   const scoreRef = useRef<ScoreState>(createScoreState())
   const stageSizeRef = useRef({ width: 1, height: 1 })
-  const { gestureConfig } = useGestureSettings()
-  const [touchPoints, setTouchPoints] = useState<NormalizedPoint[]>([])
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
+  const [handsLandmarks, setHandsLandmarks] = useState<
+    { x: number; y: number }[][] | null
+  >(null)
+  const [poseStable, setPoseStable] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const [portraitUrl, setPortraitUrl] = useState<string | null>(null)
   const [notes, setNotes] = useState<GameNote[]>(() =>
     createInitialNotes(SIMULTANEOUS_NOTE_COUNT),
   )
@@ -132,10 +136,28 @@ export function OtohiroiGame({ onBack }: Props) {
     return () => window.clearInterval(timer)
   }, [])
 
+  const handlePoseStableChange = useCallback((stable: boolean) => {
+    setPoseStable(stable)
+  }, [])
+
+  const handleStartPlay = useCallback(() => {
+    if (videoEl) {
+      try {
+        setPortraitUrl(captureStylizedPortrait(videoEl))
+      } catch {
+        // キャプチャ失敗時もプレイ開始
+      }
+    }
+    setPlaying(true)
+    void ensureAudio()
+  }, [videoEl, ensureAudio])
+
   const handleStatusChange = useCallback(
     (snapshot: GestureRuntimeSnapshot) => {
+      setHandsLandmarks(snapshot.handsLandmarks)
+      if (!playing) return
+
       const points = touchPointsFromSnapshot(snapshot)
-      setTouchPoints(points)
       if (points.length === 0) return
 
       const { width, height } = stageSizeRef.current
@@ -175,7 +197,7 @@ export function OtohiroiGame({ onBack }: Props) {
       scoreRef.current = nextScore
       setScore(nextScore)
     },
-    [ensureAudio],
+    [ensureAudio, playing],
   )
 
   useEffect(() => {
@@ -205,8 +227,18 @@ export function OtohiroiGame({ onBack }: Props) {
       </header>
 
       <div ref={stageRef} className="otohiroi-stage" aria-label="おとひろいプレイ画面">
-        <FullBodyAvatar video={videoEl} />
-        {notes.map((note, index) => (
+        <FullBodyAvatar
+          video={videoEl}
+          handsLandmarks={handsLandmarks}
+          portraitUrl={portraitUrl}
+          showHands={playing}
+          onPoseStableChange={handlePoseStableChange}
+        />
+        {!playing ? (
+          <AvatarSetupOverlay poseStable={poseStable} onStartPlay={handleStartPlay} />
+        ) : null}
+        {playing
+          ? notes.map((note, index) => (
           <span
             key={note.id}
             className="otohiroi-note"
@@ -219,38 +251,21 @@ export function OtohiroiGame({ onBack }: Props) {
               marginTop: -NOTE_RADIUS_PX,
               fontSize: NOTE_RADIUS_PX * 1.35,
               lineHeight: `${NOTE_RADIUS_PX * 2}px`,
-              zIndex: 2 + index,
+              zIndex: 4 + index,
             }}
             aria-hidden
           >
             ♪
           </span>
-        ))}
-        {touchPoints.map((point, index) => (
-          <span
-            key={`touch-${index}`}
-            className="otohiroi-finger"
-            style={{
-              left: `${point.x * 100}%`,
-              top: `${point.y * 100}%`,
-              width: FINGER_RADIUS_PX * 2,
-              height: FINGER_RADIUS_PX * 2,
-              marginLeft: -FINGER_RADIUS_PX,
-              marginTop: -FINGER_RADIUS_PX,
-            }}
-            aria-hidden
-          />
-        ))}
+        ))
+          : null}
       </div>
 
       {cameraError ? <p className="otohiroi-error">{cameraError}</p> : null}
 
       <GestureController
         enabled
-        gesturesActive={false}
         concealVideo
-        gestureConfig={gestureConfig}
-        presentationMode="PRESENTATION"
         onStatusChange={handleStatusChange}
         onRuntimeError={setCameraError}
         onVideoReady={setVideoEl}

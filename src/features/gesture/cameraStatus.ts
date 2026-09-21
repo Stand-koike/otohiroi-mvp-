@@ -6,60 +6,29 @@ export type CameraStatus =
   | 'no_hand'
   | 'error'
 
+/** ゲーム向け Hand Landmarker スナップショット（プレゼン操作フィールドなし） */
 export type GestureRuntimeSnapshot = {
   cameraStatus: CameraStatus
-  gestureEnabled: boolean
   errorMessage: string | null
   handDetected: boolean
-  inferenceFps: number
-  cooldownRemainingMs: number
-  handX: number | null
-  handY: number | null
-  phase: string
-  heldGesture: 'ok' | 'fist' | 'v' | null
-  lastCommand: string | null
-  swipeDx: number
-  swipeSamples: number
-  panActive: boolean
-  pinchZoomActive: boolean
-  pinchSpan: number | null
+  /** 第 1 手（互換） */
   landmarks: { x: number; y: number }[] | null
-  /** 検出した各手の 21 点（最大 numHands）。ゲームの両手入力用。 */
+  /** 検出した各手の 21 点 */
   handsLandmarks: { x: number; y: number }[][] | null
-  pointerX: number | null
-  pointerY: number | null
-  pointerVisible: boolean
-  vSignDetected: boolean
-  vSignHoldElapsedMs: number | null
-  interactionCooldownRemainingMs: number
 }
 
-export function cameraStatusLabel(status: CameraStatus, gestureEnabled: boolean): string {
-  if (!gestureEnabled) return 'Camera Off'
+export function cameraStatusLabel(status: CameraStatus): string {
   switch (status) {
     case 'starting':
-      return 'Camera Starting'
+      return 'カメラ準備中'
     case 'ready':
     case 'no_hand':
-      return 'No Hand'
+      return '手を探しています'
     case 'hand_detected':
-      return 'Hand Detected'
+      return '手を認識中'
     case 'error':
-      return 'Camera Error'
+      return 'カメラエラー'
     default:
-      return 'Camera Off'
+      return 'カメラオフ'
   }
-}
-
-export function gestureAvailabilityLabel(
-  status: CameraStatus,
-  gestureEnabled: boolean,
-  errorMessage: string | null,
-): string {
-  if (!gestureEnabled) return 'Gesture: OFF'
-  if (status === 'error') return 'Gesture: Unavailable'
-  if (status === 'starting') return 'Gesture: Starting'
-  if (status === 'hand_detected') return 'Gesture: Ready'
-  if (status === 'ready' || status === 'no_hand') return 'Gesture: ON'
-  return 'Gesture: OFF'
 }

@@ -1,7 +1,7 @@
 # おとひろい MVP
 
 子ども向け身体操作ゲーム「おとひろい」の専用リポジトリです。  
-手追跡は [presenter-gesture-mvp](https://github.com/Stand-koike/presenter-gesture-mvp) の `GestureController` / MediaPipe パイプラインを移植しています（プレゼン PDF 機能は含みません）。
+手追跡の初期実装は [presenter-gesture-mvp](https://github.com/Stand-koike/presenter-gesture-mvp) 由来ですが、**本リポジトリはゲーム専用**（Hand / Pose のみ、プレゼン操作なし）です。
 
 リポジトリ URL: **https://github.com/Stand-koike/otohiroi-mvp-**（末尾ハイフンに注意）
 
@@ -31,6 +31,7 @@ npm run build
 |---------|------|
 | `docs/ARCHITECTURE.md` | カメラ → 推論 → ゲームの流れ |
 | `docs/REPO_STATE.md` | ブランチ方針・PR の整理 |
+| `docs/GAME_TUNING.md` | 当たり半径・音符数など |
 | `src/features/audio/README.md` | 音源 API |
 
 ## プレゼンツールとの関係

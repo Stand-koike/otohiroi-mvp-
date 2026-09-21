@@ -7,9 +7,10 @@
 ## 含まれる主要機能（main）
 
 - 手追跡（MediaPipe Hand Landmarker、最大 2 手）
-- 全身アバター（Pose Landmarker + デフォルメ顔キャプチャ）
+- 全身アバター + **とりくみ**（Pose + デフォルメ顔 + 両手 SVG）
 - 複数 ♪・スコア・コンボ
 - 音源カタログ（`public/sounds/` + Web Audio）
+- **プレゼン PDF / ジェスチャー操作コードは削除済み**
 
 ## クローズ済み・取り込まない PR
 
