@@ -1,14 +1,19 @@
-/** 譜面 JSON の 1 イベント（noteId + beat）。 */
+/** 譜面 JSON の 1 音（BGM 用）。 */
 export type ScoreChartEvent = {
   noteId: string
   beat: number
+  /** melody=BGM のみ（既定）, bass=BGM + ♪ 出現 */
+  role?: 'melody' | 'bass'
 }
 
 export type ScoreChart = {
   id?: string
   title?: string
   bpm: number
+  /** BGM に流す全音（メロディ + ベース） */
   events: ScoreChartEvent[]
+  /** 省略時は role=bass のイベントだけ ♪ にする */
+  rhythmEvents?: ScoreChartEvent[]
 }
 
 /** 画面上の ♪ インスタンス（ゲーム UI 用）。 */
@@ -17,7 +22,6 @@ export type SpawnedChartNote = {
   x: number
   y: number
   noteId: string
-  /** 譜面 events 内のインデックス（重複 spawn 防止）。ランダム fallback 時は null。 */
   chartIndex: number | null
   beat: number | null
 }

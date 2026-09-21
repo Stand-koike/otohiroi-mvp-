@@ -1,4 +1,5 @@
 import { NOTE_SPAWN_LEAD_BEATS, randomSpawnPosition } from '../game/gameTuning'
+import { getSpawnEvents } from '../score-chart/spawnEvents'
 import type { ScoreChart, SpawnedChartNote } from '../score-chart/types'
 
 type ChartEventRef = {
@@ -21,7 +22,8 @@ export type RhythmNoteSpawner = {
 }
 
 export function createRhythmNoteSpawner(chart: ScoreChart): RhythmNoteSpawner {
-  const ordered: ChartEventRef[] = chart.events
+  const spawnEvents = getSpawnEvents(chart)
+  const ordered: ChartEventRef[] = spawnEvents
     .map((event, chartIndex) => ({
       chartIndex,
       noteId: event.noteId,
