@@ -1,0 +1,4 @@
+{
+  "name": "otohiroi-mvp",
+  "install": "npm install && npm run predev && npm run setup:models"
+}
