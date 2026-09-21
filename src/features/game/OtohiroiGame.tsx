@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AvatarLayer } from '../avatar'
 import type { GestureRuntimeSnapshot } from '../gesture/cameraStatus'
 import { GestureController } from '../gesture/GestureController'
 import { useGestureSettings } from '../gesture/useGestureSettings'
@@ -99,6 +100,7 @@ export function OtohiroiGame({ onBack }: Props) {
   const [score, setScore] = useState<ScoreState>(() => createScoreState())
   const [stageSize, setStageSize] = useState({ width: 1, height: 1 })
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
 
   notesRef.current = notes
   scoreRef.current = score
@@ -209,6 +211,7 @@ export function OtohiroiGame({ onBack }: Props) {
       </header>
 
       <div ref={stageRef} className="otohiroi-stage" aria-label="おとひろいプレイ画面">
+        <AvatarLayer video={videoEl} finger={finger} />
         {notes.map((note, index) => (
           <span
             key={note.id}
@@ -254,6 +257,7 @@ export function OtohiroiGame({ onBack }: Props) {
         presentationMode="PRESENTATION"
         onStatusChange={handleStatusChange}
         onRuntimeError={setCameraError}
+        onVideoReady={setVideoEl}
       />
     </main>
   )

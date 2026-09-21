@@ -1,0 +1,81 @@
+.otohiroi-avatar {
+  position: absolute;
+  z-index: 1;
+  width: min(42vw, 280px);
+  height: auto;
+  transform: translate(-50%, -72%);
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4));
+}
+
+.otohiroi-avatar-torikumi {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.otohiroi-avatar-panel {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: center;
+}
+
+.otohiroi-avatar-panel h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.otohiroi-avatar-hint,
+.otohiroi-avatar-error {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.otohiroi-avatar-error {
+  color: #fecaca;
+  font-size: 0.9rem;
+}
+
+.otohiroi-avatar-preview {
+  width: 100%;
+  height: min(42vh, 280px);
+  border-radius: 14px;
+  background: #020617;
+}
+
+.otohiroi-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.otohiroi-avatar-capture,
+.otohiroi-avatar-skip {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-weight: 800;
+}
+
+.otohiroi-avatar-capture {
+  background: #fde047;
+  color: #1e293b;
+}
+
+.otohiroi-avatar-skip {
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}

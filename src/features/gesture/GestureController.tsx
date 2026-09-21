@@ -30,6 +30,7 @@ type Props = {
   presentationMode?: PresentationMode
   onRuntimeError?: (message: string | null) => void
   onStatusChange?: (snapshot: GestureRuntimeSnapshot) => void
+  onVideoReady?: (video: HTMLVideoElement | null) => void
 }
 
 const EMPTY_SNAPSHOT: GestureRuntimeSnapshot = {
@@ -70,12 +71,14 @@ export function GestureController({
   presentationMode = 'PRESENTATION',
   onRuntimeError,
   onStatusChange,
+  onVideoReady,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const onCommandRef = useRef(onCommand)
   const onPresentationIntentRef = useRef(onPresentationIntent)
   const onRuntimeErrorRef = useRef(onRuntimeError)
   const onStatusChangeRef = useRef(onStatusChange)
+  const onVideoReadyRef = useRef(onVideoReady)
   const modeRef = useRef(presentationMode)
   const configRef = useRef(gestureConfig)
   const enabledRef = useRef(enabled)
@@ -87,6 +90,7 @@ export function GestureController({
   onPresentationIntentRef.current = onPresentationIntent
   onRuntimeErrorRef.current = onRuntimeError
   onStatusChangeRef.current = onStatusChange
+  onVideoReadyRef.current = onVideoReady
   modeRef.current = presentationMode
   configRef.current = gestureConfig
   enabledRef.current = enabled
@@ -195,6 +199,7 @@ export function GestureController({
         video.srcObject = stream
         video.muted = true
         await video.play()
+        if (!stopped) onVideoReadyRef.current?.(video)
       } catch (error) {
         fail(toCameraFailure(error).message)
         return
@@ -344,6 +349,7 @@ export function GestureController({
     return () => {
       stopped = true
       cancelAnimationFrame(raf)
+      onVideoReadyRef.current?.(null)
       stopStream()
       landmarker?.close()
       landmarker = null
