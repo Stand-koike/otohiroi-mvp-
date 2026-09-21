@@ -19,4 +19,4 @@
 - `beat` は 0 起点。経過時間 `(beat * 60) / bpm` 秒で ♪ がスポーンします
 - 取得後の補充も譜面順（未スポーン分）→ 尽きたら従来どおりランダム `noteId`
 
-読み込み: `loadScoreChart('/score-charts/demo-melody.json')`（`src/features/score-chart/`）
+読み込み: `loadScoreChart` に `score-charts/demo-melody.json`（相対）または `DEFAULT_SCORE_CHART_URL` を渡す（`src/features/score-chart/`）
