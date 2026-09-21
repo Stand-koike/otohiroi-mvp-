@@ -4,9 +4,12 @@
 
 - `listNotes(): NoteDefinition[]` — id / label / filePath / pitchHz
 - `getNoteById(id): NoteDefinition | undefined`
+- `isKnownNoteId(id): boolean` — 譜面 JSON の `noteId` 検証用
 - `playCollectedNote(ctx: AudioContext, noteId: string): Promise<void>`
   - `public/sounds/` を fetch → `decodeAudioData`
   - 失敗時は短い sine にフォールバック
+
+譜面の `noteId` はこのカタログと一致させます（`public/score-charts/`、`src/features/score-chart/`）。
 
 ```ts
 import { listNotes, playCollectedNote } from '../audio'
