@@ -1,5 +1,6 @@
-/** 連続取得が途切れたとみなす無取得時間（ミリ秒）。 */
-export const COMBO_IDLE_RESET_MS = 1600
+import { COMBO_IDLE_RESET_MS } from './gameTuning'
+
+export { COMBO_IDLE_RESET_MS } from './gameTuning'
 
 export type ScoreState = {
   /** 取得した音符の総数 */
