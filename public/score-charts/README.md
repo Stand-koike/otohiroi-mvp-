@@ -16,8 +16,9 @@
 ```
 
 - `noteId` は `src/features/audio/noteCatalog.ts` に存在する ID のみ
-- `beat` は 0 起点。経過時間 `(beat * 60) / bpm` 秒で ♪ がスポーンします
-- 取得後の補充も譜面順（未スポーン分）→ 尽きたら従来どおりランダム `noteId`
+- `beat` は 0 起点。**BGM と ♪ は同じ beat 時刻**に揃います（AudioContext 同期）
+- ♪ は判定の約 1 beat 前からランダム位置に表示
+- 指で触るタイミングで Perfect / Good / Miss（早すぎる触りは無効）
 
 ## 同梱曲を増やす
 

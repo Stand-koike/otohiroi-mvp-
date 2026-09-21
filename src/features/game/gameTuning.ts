@@ -30,6 +30,22 @@ export const COMBO_IDLE_RESET_MS = 2400
 /** コンボタイムアウトの UI 更新間隔（ms） */
 export const COMBO_EXPIRE_POLL_MS = 120
 
+/** ♪ を何 beat 前から表示するか（DDR の早め表示） */
+export const NOTE_SPAWN_LEAD_BEATS = 1
+
+/** 判定: Perfect / Good の許容（beat 単位） */
+export const JUDGMENT_PERFECT_BEATS = 0.12
+export const JUDGMENT_GOOD_BEATS = 0.28
+
+/** この beat を過ぎたらミスとして ♪ を消す（target + late） */
+export const JUDGMENT_MISS_LATE_BEATS = 0.38
+
+/** リズムループの tick（ms） */
+export const RHYTHM_TICK_MS = 50
+
+/** 譜面 BGM 用の短音音量（0–1） */
+export const CHART_MUSIC_GAIN = 0.42
+
 export function randomSpawnPosition(avoid?: NormalizedPoint | null): {
   x: number
   y: number

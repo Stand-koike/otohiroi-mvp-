@@ -26,7 +26,7 @@ export function App() {
     return (
       <main className="otohiroi-entry">
         <h1>おとひろい</h1>
-        <p className="otohiroi-entry__hint">きょくをえらんで ♪ をひろろう</p>
+        <p className="otohiroi-entry__hint">おんがくにあわせて ♪ をリズムでひろおう</p>
         <SongPicker
           charts={BUNDLED_CHARTS}
           selectedId={selectedChart.id}

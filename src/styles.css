@@ -325,6 +325,31 @@ button { font: inherit; cursor: pointer; }
   cursor: not-allowed;
 }
 
+.otohiroi-judgment {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  z-index: 30;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 900;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.otohiroi-judgment--perfect {
+  color: #fde047;
+}
+
+.otohiroi-judgment--good {
+  color: #86efac;
+}
+
+.otohiroi-judgment--miss {
+  color: #fca5a5;
+}
+
 .otohiroi-avatar-hint {
   position: absolute;
   inset: 0;
