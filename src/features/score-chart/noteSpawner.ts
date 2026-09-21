@@ -1,14 +1,7 @@
 import { listNotes } from '../audio/noteCatalog'
+import { randomSpawnPosition } from '../game/gameTuning'
 import type { NormalizedPoint } from '../game/handCoords'
 import type { ScoreChart, SpawnedChartNote } from './types'
-
-const DEFAULT_MARGIN = 0.1
-const DEFAULT_SPAWN_CLEARANCE = 0.14
-
-export type NoteSpawnerOptions = {
-  margin?: number
-  spawnClearance?: number
-}
 
 type OrderedEvent = {
   chartIndex: number
@@ -29,34 +22,13 @@ function pickRandomNoteId(): string {
   return pick?.id ?? 'c4'
 }
 
-function randomPosition(
-  margin: number,
-  clearance: number,
-  avoid?: NormalizedPoint | null,
-): { x: number; y: number } {
-  for (let attempt = 0; attempt < 16; attempt++) {
-    const x = margin + Math.random() * (1 - margin * 2)
-    const y = margin + Math.random() * (1 - margin * 2)
-    if (avoid && Math.hypot(x - avoid.x, y - avoid.y) < clearance) {
-      continue
-    }
-    return { x, y }
-  }
-  return {
-    x: margin + Math.random() * (1 - margin * 2),
-    y: margin + Math.random() * (1 - margin * 2),
-  }
-}
-
 function toSpawnedNote(
   noteId: string,
   chartIndex: number | null,
   beat: number | null,
-  margin: number,
-  clearance: number,
   avoid?: NormalizedPoint | null,
 ): SpawnedChartNote {
-  const { x, y } = randomPosition(margin, clearance, avoid)
+  const { x, y } = randomSpawnPosition(avoid)
   return {
     id: nextInstanceId(),
     x,
@@ -77,12 +49,7 @@ export type ChartNoteSpawner = {
   pollBeatSpawns: (elapsedMs: number, playStartMs: number) => SpawnedChartNote[]
 }
 
-export function createChartNoteSpawner(
-  chart: ScoreChart,
-  options: NoteSpawnerOptions = {},
-): ChartNoteSpawner {
-  const margin = options.margin ?? DEFAULT_MARGIN
-  const clearance = options.spawnClearance ?? DEFAULT_SPAWN_CLEARANCE
+export function createChartNoteSpawner(chart: ScoreChart): ChartNoteSpawner {
   const ordered: OrderedEvent[] = chart.events
     .map((event, chartIndex) => ({ chartIndex, noteId: event.noteId, beat: event.beat }))
     .sort((a, b) => a.beat - b.beat || a.chartIndex - b.chartIndex)
@@ -105,7 +72,7 @@ export function createChartNoteSpawner(
     avoid?: NormalizedPoint | null,
   ): SpawnedChartNote => {
     markSpawned(entry.chartIndex)
-    return toSpawnedNote(entry.noteId, entry.chartIndex, entry.beat, margin, clearance, avoid)
+    return toSpawnedNote(entry.noteId, entry.chartIndex, entry.beat, avoid)
   }
 
   const nextChartEntryForReplacement = (): OrderedEvent | null => {
@@ -134,7 +101,7 @@ export function createChartNoteSpawner(
       if (entry) {
         return spawnFromChartIndex(entry, avoid)
       }
-      return toSpawnedNote(pickRandomNoteId(), null, null, margin, clearance, avoid)
+      return toSpawnedNote(pickRandomNoteId(), null, null, avoid)
     },
     pollBeatSpawns(elapsedMs, playStartMs) {
       const elapsedSec = Math.max(0, (elapsedMs - playStartMs) / 1000)
@@ -151,13 +118,9 @@ export function createChartNoteSpawner(
 }
 
 /** 譜面ロード前の暫定 spawner（従来どおりランダム noteId）。 */
-export function createRandomNoteSpawner(
-  options: NoteSpawnerOptions = {},
-): ChartNoteSpawner {
-  const margin = options.margin ?? DEFAULT_MARGIN
-  const clearance = options.spawnClearance ?? DEFAULT_SPAWN_CLEARANCE
+export function createRandomNoteSpawner(): ChartNoteSpawner {
   const randomOne = (avoid?: NormalizedPoint | null) =>
-    toSpawnedNote(pickRandomNoteId(), null, null, margin, clearance, avoid)
+    toSpawnedNote(pickRandomNoteId(), null, null, avoid)
 
   return {
     bpm: 120,

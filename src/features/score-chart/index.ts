@@ -4,7 +4,6 @@ export {
   createChartNoteSpawner,
   createRandomNoteSpawner,
   type ChartNoteSpawner,
-  type NoteSpawnerOptions,
 } from './noteSpawner'
 
 export const DEFAULT_SCORE_CHART_URL = '/score-charts/demo-melody.json'

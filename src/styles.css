@@ -94,10 +94,20 @@ button { font: inherit; cursor: pointer; }
   font-variant-numeric: tabular-nums;
 }
 .otohiroi-combo.is-hot {
-  background: rgba(249, 115, 22, 0.35);
+  background: rgba(249, 115, 22, 0.42);
   border-color: #fdba74;
-  box-shadow: 0 0 18px rgba(251, 146, 60, 0.55);
-  transform: scale(1.06);
+  box-shadow: 0 0 22px rgba(251, 146, 60, 0.65);
+  transform: scale(1.08);
+  animation: otohiroi-combo-pulse 1.2s ease-in-out infinite;
+}
+@keyframes otohiroi-combo-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 18px rgba(251, 146, 60, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(253, 186, 116, 0.85);
+  }
 }
 .otohiroi-back {
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -124,10 +134,21 @@ button { font: inherit; cursor: pointer; }
   text-align: center;
   color: #fde047;
   text-shadow:
-    0 0 20px rgba(250, 204, 21, 0.9),
+    0 0 24px rgba(250, 204, 21, 0.95),
+    0 0 8px rgba(255, 255, 255, 0.35),
     0 2px 0 #b45309;
   pointer-events: none;
   user-select: none;
+  animation: otohiroi-note-float 2.4s ease-in-out infinite;
+}
+@keyframes otohiroi-note-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 .otohiroi-finger {
   position: absolute;
@@ -168,6 +189,21 @@ button { font: inherit; cursor: pointer; }
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.otohiroi-avatar__body {
+  filter: drop-shadow(0 0 0.02rem rgba(15, 23, 42, 0.45));
+}
+
+.otohiroi-avatar__fill {
+  fill: rgba(125, 211, 252, 0.42);
+  stroke: rgba(186, 230, 253, 0.85);
+  stroke-width: 0.006;
+  stroke-linejoin: round;
+}
+
+.otohiroi-avatar__face {
+  filter: drop-shadow(0 0 0.015rem rgba(15, 23, 42, 0.35));
 }
 
 .otohiroi-avatar__bone {

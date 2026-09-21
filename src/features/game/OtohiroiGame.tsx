@@ -22,16 +22,12 @@ import {
   updateScoreOnCollect,
   type ScoreState,
 } from './gameScore'
-
-const NOTE_RADIUS_PX = 52
-const FINGER_RADIUS_PX = 28
-/** 指先と音符の当たり半径（px）。重なっていても各音符を独立判定する。 */
-const HIT_RADIUS_PX = NOTE_RADIUS_PX + FINGER_RADIUS_PX
-const MARGIN = 0.1
-const SIMULTANEOUS_NOTE_COUNT = 3
-/** 指の直下への再スポーンを避ける正規化距離。 */
-const SPAWN_CLEARANCE = 0.14
-const SPAWN_OPTIONS = { margin: MARGIN, spawnClearance: SPAWN_CLEARANCE }
+import {
+  COMBO_EXPIRE_POLL_MS,
+  HIT_RADIUS_PX,
+  NOTE_RADIUS_PX,
+  SIMULTANEOUS_NOTE_COUNT,
+} from './gameTuning'
 
 type GameNote = SpawnedChartNote
 
@@ -46,7 +42,7 @@ export function OtohiroiGame({ onBack }: Props) {
   const scoreRef = useRef<ScoreState>(createScoreState())
   const stageSizeRef = useRef({ width: 1, height: 1 })
   const chartRef = useRef<ScoreChart | null>(null)
-  const spawnerRef = useRef<ChartNoteSpawner>(createRandomNoteSpawner(SPAWN_OPTIONS))
+  const spawnerRef = useRef<ChartNoteSpawner>(createRandomNoteSpawner())
   const playStartMsRef = useRef<number>(0)
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
   const [handsLandmarks, setHandsLandmarks] = useState<
@@ -106,7 +102,7 @@ export function OtohiroiGame({ onBack }: Props) {
       if (next === scoreRef.current) return
       scoreRef.current = next
       setScore(next)
-    }, 120)
+    }, COMBO_EXPIRE_POLL_MS)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -123,8 +119,8 @@ export function OtohiroiGame({ onBack }: Props) {
       }
     }
     spawnerRef.current = chartRef.current
-      ? createChartNoteSpawner(chartRef.current, SPAWN_OPTIONS)
-      : createRandomNoteSpawner(SPAWN_OPTIONS)
+      ? createChartNoteSpawner(chartRef.current)
+      : createRandomNoteSpawner()
     playStartMsRef.current = performance.now()
     const initial = spawnerRef.current.initialNotes(SIMULTANEOUS_NOTE_COUNT)
     notesRef.current = initial

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { PoseLandmarker } from '@mediapipe/tasks-vision'
 import { mirrorNormalizedPoint } from '../game/handCoords'
 import {
@@ -6,24 +6,15 @@ import {
   createPoseLandmarker,
 } from '../pose/createPoseLandmarker'
 import { captureStylizedPortrait } from './capturePortrait'
+import {
+  armSilhouettePaths,
+  headClipMetrics,
+  legSilhouettePaths,
+  linkHandsToPoseWrists,
+  torsoSilhouettePath,
+  wristBridgePath,
+} from './bodySilhouette'
 import { HAND_BONE_EDGES, mirroredHandPoints } from './handDrawing'
-
-const BODY_EDGES: readonly [number, number][] = [
-  [11, 12],
-  [11, 13],
-  [13, 15],
-  [12, 14],
-  [14, 16],
-  [11, 23],
-  [12, 24],
-  [23, 24],
-  [23, 25],
-  [25, 27],
-  [24, 26],
-  [26, 28],
-  [0, 11],
-  [0, 12],
-]
 
 const POSE_STABLE_FRAMES = 45
 
@@ -42,6 +33,7 @@ export function FullBodyAvatar({
   showHands,
   onPoseStableChange,
 }: Props) {
+  const faceClipId = useId().replace(/:/g, '')
   const [landmarks, setLandmarks] = useState<{ x: number; y: number }[] | null>(null)
   const stableFramesRef = useRef(0)
   const stableSentRef = useRef(false)
@@ -115,17 +107,24 @@ export function FullBodyAvatar({
   }
 
   const points = landmarks.map((point) => mirrorNormalizedPoint(point))
-  const nose = points[0]
-  const leftShoulder = points[11]
-  const rightShoulder = points[12]
-  const headCx =
-    nose?.x ??
-    (leftShoulder && rightShoulder ? (leftShoulder.x + rightShoulder.x) / 2 : 0.5)
-  const headCy = nose?.y ?? 0.22
-  const shoulderW =
-    leftShoulder && rightShoulder
-      ? Math.hypot(leftShoulder.x - rightShoulder.x, leftShoulder.y - rightShoulder.y)
-      : 0.18
+  const head = headClipMetrics(points)
+  const torsoPath = torsoSilhouettePath(points)
+  const legPaths = legSilhouettePaths(points)
+  const handLinks =
+    showHands && handsLandmarks?.length
+      ? linkHandsToPoseWrists(handsLandmarks, points, (hand) => {
+          const mirrored = mirroredHandPoints(hand)
+          return mirrored[0] ?? null
+        })
+      : []
+  const armPaths = armSilhouettePaths(points)
+  const bridgePaths = handLinks.map((link) =>
+    wristBridgePath(link.poseWrist, link.handWrist),
+  )
+
+  const portraitSize = head.r * 2.15
+  const portraitX = head.cx - portraitSize / 2
+  const portraitY = head.cy - portraitSize * 0.52
 
   const handLayers =
     showHands && handsLandmarks?.length
@@ -168,31 +167,38 @@ export function FullBodyAvatar({
       preserveAspectRatio="none"
       aria-hidden
     >
+      <defs>
+        <clipPath id={faceClipId}>
+          <circle cx={head.cx} cy={head.cy} r={head.r} />
+        </clipPath>
+      </defs>
+
+      <g className="otohiroi-avatar__body">
+        {torsoPath ? <path d={torsoPath} className="otohiroi-avatar__fill" /> : null}
+        {legPaths.map((path, index) => (
+          <path key={`leg-${index}`} d={path} className="otohiroi-avatar__fill" />
+        ))}
+        {armPaths.map((path, index) => (
+          <path key={`arm-${index}`} d={path} className="otohiroi-avatar__fill" />
+        ))}
+        {bridgePaths.map((path, index) => (
+          <path key={`bridge-${index}`} d={path} className="otohiroi-avatar__fill" />
+        ))}
+      </g>
+
       {portraitUrl ? (
         <image
           href={portraitUrl}
-          x={headCx - shoulderW * 0.55}
-          y={headCy - shoulderW * 0.75}
-          width={shoulderW * 1.15}
-          height={shoulderW * 1.15}
+          x={portraitX}
+          y={portraitY}
+          width={portraitSize}
+          height={portraitSize}
           preserveAspectRatio="xMidYMid slice"
+          clipPath={`url(#${faceClipId})`}
+          className="otohiroi-avatar__face"
         />
       ) : null}
-      {BODY_EDGES.map(([from, to]) => {
-        const start = points[from]
-        const end = points[to]
-        if (!start || !end) return null
-        return (
-          <line
-            key={`${from}-${to}`}
-            x1={start.x}
-            y1={start.y}
-            x2={end.x}
-            y2={end.y}
-            className="otohiroi-avatar__bone"
-          />
-        )
-      })}
+
       {handLayers}
     </svg>
   )
