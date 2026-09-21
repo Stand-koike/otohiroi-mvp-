@@ -19,4 +19,11 @@
 - `beat` は 0 起点。経過時間 `(beat * 60) / bpm` 秒で ♪ がスポーンします
 - 取得後の補充も譜面順（未スポーン分）→ 尽きたら従来どおりランダム `noteId`
 
+## 同梱曲を増やす
+
+1. このフォルダに JSON を追加
+2. `src/features/score-chart/chartCatalog.ts` の `BUNDLED_CHARTS` に 1 行追加
+
+ホーム画面の「なかまのきょく」に表示されます。
+
 読み込み: `loadScoreChart` に `score-charts/demo-melody.json`（相対）または `DEFAULT_SCORE_CHART_URL` を渡す（`src/features/score-chart/`）

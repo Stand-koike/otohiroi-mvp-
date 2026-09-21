@@ -37,6 +37,59 @@ button { font: inherit; cursor: pointer; }
   font-weight: 800;
 }
 
+.otohiroi-entry__songs {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: min(100%, 20rem);
+}
+
+.otohiroi-entry__songs-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fde68a;
+  margin-bottom: 10px;
+}
+
+.otohiroi-entry__song-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.otohiroi-entry__song {
+  width: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.otohiroi-entry__song.is-selected {
+  border-color: #fde047;
+  background: rgba(253, 224, 71, 0.18);
+  box-shadow: 0 0 16px rgba(253, 224, 71, 0.35);
+}
+
+.otohiroi-song-title {
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #bae6fd;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .otohiroi {
   display: flex;
   flex-direction: column;

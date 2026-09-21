@@ -7,7 +7,6 @@ import { GestureController } from '../gesture/GestureController'
 import {
   createChartNoteSpawner,
   createRandomNoteSpawner,
-  DEFAULT_SCORE_CHART_URL,
   loadScoreChart,
   type ChartNoteSpawner,
   type ScoreChart,
@@ -32,10 +31,12 @@ import {
 type GameNote = SpawnedChartNote
 
 type Props = {
+  chartUrl: string
+  songTitle: string
   onBack: () => void
 }
 
-export function OtohiroiGame({ onBack }: Props) {
+export function OtohiroiGame({ chartUrl, songTitle, onBack }: Props) {
   const stageRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<AudioContext | null>(null)
   const notesRef = useRef<GameNote[]>([])
@@ -87,14 +88,22 @@ export function OtohiroiGame({ onBack }: Props) {
   }, [])
 
   useEffect(() => {
-    void loadScoreChart(DEFAULT_SCORE_CHART_URL)
+    if (!chartUrl) {
+      chartRef.current = null
+      return
+    }
+    let cancelled = false
+    void loadScoreChart(chartUrl)
       .then((chart) => {
-        chartRef.current = chart
+        if (!cancelled) chartRef.current = chart
       })
       .catch(() => {
-        chartRef.current = null
+        if (!cancelled) chartRef.current = null
       })
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [chartUrl])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -203,6 +212,7 @@ export function OtohiroiGame({ onBack }: Props) {
     <main className="otohiroi">
       <header className="otohiroi-header">
         <h1 className="otohiroi-title">おとひろい</h1>
+        <p className="otohiroi-song-title">{songTitle}</p>
         <div className="otohiroi-scorebar" aria-live="polite">
           <div className="otohiroi-score">
             <span className="otohiroi-score__label">ひろった</span>
