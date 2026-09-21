@@ -14,6 +14,7 @@
 | `SPAWN_CLEARANCE` | 0.16 | 再スポーン時、指の近くを避ける距離 |
 | `COMBO_IDLE_RESET_MS` | 2400 | コンボが途切れるまでの猶予（ms） |
 | `COMBO_EXPIRE_POLL_MS` | 120 | コンボ UI の更新間隔 |
+| `DEFAULT_SCORE_CHART_URL` | `/score-charts/demo-melody.json` | 譜面ドリブン spawn（`score-chart/`） |
 
 ## スコア（gameScore.ts）
 

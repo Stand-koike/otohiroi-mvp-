@@ -23,3 +23,7 @@ export function getNoteById(id: string): NoteDefinition | undefined {
 export function listNotes(): NoteDefinition[] {
   return NOTE_CATALOG.slice()
 }
+
+export function isKnownNoteId(id: string): boolean {
+  return notesById.has(id)
+}
